@@ -50,7 +50,7 @@ app.post("/send-email", async (req, res, next) => {
       console.error(error);
       next(error);
     }
-  });
+  })();
 });
 
 app.use((err, req, res, next) => {
