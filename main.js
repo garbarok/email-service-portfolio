@@ -16,7 +16,7 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-app.use(cors({ origin: process.env.ORIGIN }));
+app.use(cors({ origin: "http://localhost:5173" }));
 app.use(bodyParser.json());
 
 app.post("/send-email", async (req, res, next) => {
@@ -41,7 +41,7 @@ app.post("/send-email", async (req, res, next) => {
         <p>Name: ${name}</p>
         <p>Email: ${email}</p>
         <p>Message:</p>
-        <p>${sanitizedMessage}</p>
+        <pre>${sanitizedMessage}</pre>
       `,
       });
       console.log(data);
