@@ -34,7 +34,7 @@ app.post("/send-email", async (req, res, next) => {
       });
 
       const data = await resend.emails.send({
-        from: `onboarding@resend.dev`,
+        from: process.env.EMAIL_FROM,
         to: [process.env.EMAIL_USER],
         subject: `New message from ${name}`,
         html: `
@@ -60,5 +60,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on ${PORT}`);
 });
