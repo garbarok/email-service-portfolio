@@ -1,83 +1,35 @@
 const express = require("express");
-const bodyParser = require("body-parser");
+const helmet = require("helmet");
 const cors = require("cors");
 const { Resend } = require("resend");
-const rateLimit = require("express-rate-limit");
-const sanitizeHtml = require("sanitize-html");
 require("dotenv").config();
+const emailRoutes = require("./routes/emailRoutes");
 
 const app = express();
-const resend = new Resend(process.env.AUTH_TOKEN);
 
-// Rate limiting setup
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 15,
-});
-
+// Define environment-based origins for CORS
 const envOrigins = {
   production: process.env.PRD_ORIGIN,
   preproduction: process.env.ACC_ORIGIN,
   development: process.env.DEV_ORIGIN,
 };
 
+// Get the current origin based on the environment
 const currentOrigin = envOrigins[process.env.ENVIRONMENT];
 
-app.use(limiter);
-app.use(cors({ origin: currentOrigin }));
-app.use(bodyParser.json());
+// Set up CORS with the correct origin
+const corsOptions = {
+  origin: currentOrigin,
+  optionsSuccessStatus: 200,
+};
 
-app.post("/send-email", async (req, res, next) => {
-  const { name, email, message } = req.body;
-  if (!name || !email || !message) {
-    res.status(400).send("Bad Request");
-    return;
-  }
+app.use(helmet());
+app.use(cors(corsOptions));
+app.use(express.json());
 
-  (async function () {
-    try {
-      const sanitizedMessage = sanitizeHtml(message, {
-        allowedTags: [],
-        allowedAttributes: {},
-      });
-      const emailTemplate = (name, email, message) => `
-<html>
-<head>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f4; }
-        .email-container { background-color: #ffffff; margin: 50px auto; padding: 20px; border-radius: 8px; width: 80%; max-width: 600px; }
-        h1 { color: #333; }
-        p { color: #666; }
-        pre { background-color: #eee; padding: 10px; border-radius: 4px; }
-    </style>
-</head>
-<body>
-    <div class="email-container">
-        <h1>New message from ${name}</h1>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Message:</strong></p>
-        <pre>${message}</pre>
-    </div>
-</body>
-</html>
-`;
+app.use("/api", emailRoutes);
 
-      const html = emailTemplate(name, email, sanitizedMessage);
-      const data = await resend.emails.send({
-        from: process.env.EMAIL_FROM,
-        to: [process.env.EMAIL_USER],
-        subject: `New message from ${name}`,
-        html: html,
-      });
-      console.log(data);
-      res.status(200).send("Email sent successfully");
-    } catch (error) {
-      console.error(error);
-      next(error);
-    }
-  })();
-});
-
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Server error");
@@ -85,5 +37,5 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on ${PORT}, CORS set to ${currentOrigin}`);
+  console.log(`Server is running on ${PORT} ${currentOrigin} mode`);
 });
